@@ -1,0 +1,156 @@
+#!/bin/bash
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+# certdeploy – A deploy hook script for Certbot              [by Thomas Lange] #
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#                                                                              #
+# =================================== USAGE ================================== #
+#                                                                              #
+# certdeploy [OPTIONS] source_directory target_directory                       #
+#                                                                              #
+# =========================== COMMAND-LINE OPTIONS =========================== #
+#                                                                              #
+# [-m mode] Mode for target certificate files (octal notation, 3-4 digits)     #
+# [-o owner] User ownership for certificate files in target directory          #
+# [-g group] Group ownership for certificate files in target directory         #
+#                                                                              #
+# [-M mode] Mode for target directory (octal notation, 3-4 digits)             #
+# [-O owner] User ownership for target directory                               #
+# [-G group] Group ownership for target directory                              #
+#                                                                              #
+# [-K] Filename for private key in target directory                            #
+# [-I] Filename for intermediate in target directory                           #
+# [-C] Filename for certifcate in target directory                             #
+# [-F] Filename for certificate chain in target directory                      #
+#                                                                              #
+# ========================== COMMAND-LINE ARGUMENTS ========================== #
+#                                                                              #
+# [$1]: Source directory of the certificate files                              #
+# [$2]: Target directory in which the certificate files shall be copied        #
+#                                                                              #
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+#===============================================================================
+# Parse command-line options
+#===============================================================================
+while getopts :m:o:g:M:O:G:K:I:C:F: option
+do
+	case $option in
+		m) OPTION_FMODE="$OPTARG" ;;
+		o) OPTION_FOWNER="$OPTARG" ;;
+		g) OPTION_FGROUP="$OPTARG" ;;
+		M) OPTION_DMODE="$OPTARG" ;;
+		O) OPTION_DOWNER="$OPTARG" ;;
+		G) OPTION_DGROUP="$OPTARG" ;;
+		K) OPTION_TARGET_FILENAME_K="$OPTARG" ;;
+		I) OPTION_TARGET_FILENAME_I="$OPTARG" ;;
+		C) OPTION_TARGET_FILENAME_C="$OPTARG" ;;
+		F) OPTION_TARGET_FILENAME_F="$OPTARG" ;;
+	esac
+done; shift $((OPTIND-1))
+
+#===============================================================================
+# Check presence of required non-option arguments
+#===============================================================================
+if [ -z "$1" ]
+then
+	echo "$0: Missing argument #1: Path to source directory" >&2
+	argument_errors_occurred=x
+fi
+
+if [ -z "$2" ]
+then
+	echo "$0: Missing argument #2: Path to target directory" >&2
+	argument_errors_occurred=x
+fi
+
+#===============================================================================
+# Check if argument presence-validation errors occurred
+#===============================================================================
+[ ! -z "$argument_errors_occurred" ] && echo "Aborting ..." && exit 1
+
+#===============================================================================
+# Define {source|target} directory path variable
+#===============================================================================
+SOURCE_PATH="$1"
+TARGET_PATH="$2"
+
+#===============================================================================
+# Define {file|directory} mode, owner and group variables
+#===============================================================================
+FMODE="${OPTION_FMODE:-0600}"
+FOWNER="${OPTION_FOWNER:-$(whoami)}"
+FGROUP="${OPTION_FGROUP:-$(whoami)}"
+
+DMODE="${OPTION_DMODE:-0755}"
+DOWNER="${OPTION_DOWNER:-$(whoami)}"
+DGROUP="${OPTION_DGROUP:-$(whoami)}"
+
+# Allow only four digits (octal notation) for modes
+DMODE="$(echo "$DMODE" | tr -dc '0-7' | cut -c 1-4)"
+FMODE="$(echo "$FMODE" | tr -dc '0-7' | cut -c 1-4)"
+
+#===============================================================================
+# Define {source|target} filename variables
+#===============================================================================
+SOURCE_FILENAME_K="privkey.pem"
+SOURCE_FILENAME_I="chain.pem"
+SOURCE_FILENAME_C="cert.pem"
+SOURCE_FILENAME_F="fullchain.pem"
+
+TARGET_FILENAME_K="${OPTION_TARGET_FILENAME_K:-confidential.pem}"
+TARGET_FILENAME_I="${OPTION_TARGET_FILENAME_I:-intermediate.pem}"
+TARGET_FILENAME_C="${OPTION_TARGET_FILENAME_C:-certificate_only.pem}"
+TARGET_FILENAME_F="${OPTION_TARGET_FILENAME_F:-certificate_full.pem}"
+
+#===============================================================================
+# Define {source|target} full path variables
+#===============================================================================
+SOURCE_PATH_K="${SOURCE_PATH%/}/${SOURCE_FILENAME_K}"
+SOURCE_PATH_I="${SOURCE_PATH%/}/${SOURCE_FILENAME_I}"
+SOURCE_PATH_C="${SOURCE_PATH%/}/${SOURCE_FILENAME_C}"
+SOURCE_PATH_F="${SOURCE_PATH%/}/${SOURCE_FILENAME_F}"
+
+TARGET_PATH_K="${TARGET_PATH%/}/${TARGET_FILENAME_K}"
+TARGET_PATH_I="${TARGET_PATH%/}/${TARGET_FILENAME_I}"
+TARGET_PATH_C="${TARGET_PATH%/}/${TARGET_FILENAME_C}"
+TARGET_PATH_F="${TARGET_PATH%/}/${TARGET_FILENAME_F}"
+
+#===============================================================================
+# Check if source directory exists and is readable
+#===============================================================================
+if [ ! -d "$SOURCE_PATH" ] || [ ! -r "$SOURCE_PATH" ]
+then
+	echo "Directory »$SOURCE_PATH« doesn't exists or isn't readable."
+	echo "Aborting ..." && exit 1
+fi
+
+#===============================================================================
+# Check if certificate files exist and are readable
+#===============================================================================
+for file in "$SOURCE_PATH_K" "$SOURCE_PATH_I" "$SOURCE_PATH_C" "$SOURCE_PATH_F"
+do
+	if [ ! -f "$file" ] || [ ! -r "$file" ]
+	then
+		echo "File »$file doesn't exists or isn't readable."
+		echo "Aborting ..." && exit 1
+	fi
+done
+
+#===============================================================================
+# Create target directory (with parents) for certificate files
+#===============================================================================
+install -m "$DMODE" -o "$DOWNER" -g "$DGROUP" -d "$TARGET_PATH"
+
+#===============================================================================
+# Copy certificate files from source to the target destination
+#===============================================================================
+install -m "$FMODE" -o "$FOWNER" -g "$FGROUP" "$SOURCE_PATH_K" "$TARGET_PATH_K"
+install -m "$FMODE" -o "$FOWNER" -g "$FGROUP" "$SOURCE_PATH_I" "$TARGET_PATH_I"
+install -m "$FMODE" -o "$FOWNER" -g "$FGROUP" "$SOURCE_PATH_C" "$TARGET_PATH_C"
+install -m "$FMODE" -o "$FOWNER" -g "$FGROUP" "$SOURCE_PATH_F" "$TARGET_PATH_F"
+
+#===============================================================================
+# Print stats for target directory and certificate files
+#===============================================================================
+stat -c "[%a:%A] [%U:%G] => %n" ${TARGET_PATH%/}
+stat -c "[%a:%A] [%U:%G] => %n" ${TARGET_PATH%/}/*
