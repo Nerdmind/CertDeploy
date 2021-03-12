@@ -3,7 +3,7 @@ CertDeploy is a "deploy hook" script for the [Certbot ACME client](https://certb
 
 It can be used with the `--deploy-hook` option of Certbot to easily deploy (or better: "install/move") your previously obtained X.509 certificates from Certbot's default location to a **desired directory structure with your custom UNIX file and directory permissions and custom user/group ownership**.
 
-CertDeploy has been developed for people like me who want their certificate files residing in a **different and controllable directory structure** instead of the `live` directory (`/etc/letsencrypt/live/foo`) provided by Certbot. Many services are not running with `root` privileges, so they need to have read permissions for the X.509 certificate files and the corresponding private key file, which means that one need to adjust the UNIX file permissions and user/group ownership anyway.
+CertDeploy has been developed for people like me who want their certificate files residing in a **different and controllable directory structure** instead of the default directory (`/etc/letsencrypt/live/foo`) provided by Certbot. Many services do not run with `root` privileges, so they need to have read permissions for the X.509 certificate file(s) and the corresponding private key file, which means that one need to adjust the UNIX file permissions and user/group ownership anyway.
 
 CertDeploy is a **different approach** than just changing the UNIX permission modes of the files residing in the directory provided by Certbot and gives you the opportunity to create your own directory structure for your X.509 certificates. If you don't like this approach, it's okay.
 
@@ -19,12 +19,12 @@ The only two required command-line arguments are the source and the target direc
 
 ~~~bash
 certdeploy [OPTIONS] source_directory target_directory
-certdeploy [OPTIONS] /etc/letsencrypt/live/foo_bar.example.org /etc/certdeploy/foo_bar.example.org
+certdeploy [OPTIONS] /etc/letsencrypt/live/foo_bar.example.org /etc/certdeploy/foo/bar.example.org
 ~~~
 
 The **source directory** is usually the `/etc/letsencrypt/live/foo_bar.example.org` directory provided by Certbot in which your newly issued (or renewed) certificate files reside. The **target directory** is the path to the custom directory in which the certificate files shall be copied into by CertDeploy.
 
-The following options letting you change the UNIX file permission modes of the target directory and/or the certificate files within your **target directory**. You can also change the name of the individual certificate files **for the target directory** (the private key, the intermediate, the certificate or the certificate chain file):
+The following options let you change the UNIX file permission modes of the target directory and/or the certificate files within your **target directory**. You also can change the name of the individual certificate files **for the target directory** (the private key, the intermediate, the certificate or the certificate chain file):
 
 * `[-m mode]` **(default: `0600`)**:  
 Mode for target certificate files (octal notation, 3-4 digits)
@@ -36,7 +36,7 @@ User ownership for certificate files in target directory
 Group ownership for certificate files in target directory
 
 * `[-M mode]` **(default: `0755`)**:  
-Mode for target directory (octal notation)
+Mode for target directory (octal notation, 3-4 digits)
 
 * `[-O owner]` **(default: `$(whoami)`)**:  
 User ownership for target directory
@@ -51,22 +51,32 @@ Filename for private key in target directory
 Filename for intermediate in target directory
 
 * `[-C filename]` **(default: `certificate_only.pem`)**:  
-Filename for certifcate in target directory
+Filename for certificate in target directory
 
 * `[-F filename]` **(default: `certificate_full.pem`)**:  
 Filename for certificate chain in target directory
 
-**Notice:** CertDeploy assumes that the certificate files **in the source directory** are named by the following, which is the default for the files provided by Certbot. Those filenames are hardcoded into CertDeploy. But since it is a simple Bash script, you can edit it if you want to use this script not in conjunction with certificate files provided by Certbot. *Yes, you can!*
+**Notice:** CertDeploy assumes that the certificate files **in the source directory** are named by the following, which is the default for the files provided by Certbot. Those filenames are hardcoded into CertDeploy:
 
 * `privkey.pem` for the RSA/ECDSA private key
 * `chain.pem` for the X.509 intermediate certificate
 * `cert.pem` for the X.509 certificate (without intermediate)
 * `fullchain.pem` for the X.509 certificate (with intermediate)
 
-## How to use CertDeploy in conjunction with Certbot?
-In this example, we will request a new X.509 certificate with Certbot intended to use on a Mumble server installed on a Debian GNU/Linux machine. The Mumble server daemon runs as user `mumble-server` and needs to have at least read permissions for the certificate files. It is sufficient to use UNIX permissions `0600` (default) and user ownership `mumble-server` to achieve this. Since Certbot is running as `root`, the group ownership of the certificate files will be the default, which is `$(whoami)` (which will be substituted to `root` in this case).
+But since CertDeploy is just a simple Bash script, you can edit it if you want to use this script not in conjunction with certificate files provided by Certbot. *Yes, you can!*
 
-OK, just request a new staging (test) certificate from Certbot with the `certonly` subcommand and provide the `--deploy-hook` option as follows. (Of course, you may need to adjust your `--webroot-path` in which the `.well-known/acme-challenge` directory for your domains is located. I have this directory globally located at `/var/www/.well-known/acme-challenge` for **all** my hostnames to make things easier.)
+## How to use CertDeploy in conjunction with Certbot?
+In this example, we will request a new X.509 certificate with Certbot intended to use on a Mumble server installed on a Debian Buster GNU/Linux machine. The Mumble server daemon runs as user `mumble-server` and needs to have at least read permissions for the certificate file(s) and their corresponding private key:
+
+~~~ini
+; /etc/mumble-server.ini
+sslCert=/etc/certdeploy/mumble/voip.example.org/certificate_full.pem
+sslKey=/etc/certdeploy/mumble/voip.example.org/confidential.pem
+~~~
+
+It is sufficient to use UNIX permissions `0600` (default) and user ownership `mumble-server` to achieve this. Since Certbot is running as `root` and because we omit the `-g` option of CertDeploy, the group ownership of the certificate files will become the default `$(whoami)` (which will be substituted to `root` in this case).
+
+OK, just request a new staging (test) certificate from Certbot with the `certonly` subcommand and provide the `--deploy-hook` option as follows. (You may need to adjust your `--webroot-path` in which the `.well-known/acme-challenge` directory for your domains is located. I have this directory globally located at `/var/www/.well-known/acme-challenge` for **all** my hostnames to make things easier.)
 
 **Notice:** If I have not mentioned it yet:  
 *You need to have a dedicated webserver installed for this step!*
@@ -75,9 +85,9 @@ OK, just request a new staging (test) certificate from Certbot with the `certonl
 certbot --staging certonly --cert-name mumble_voip.example.org -d voip.example.org --webroot --webroot-path /var/www --deploy-hook '/usr/local/sbin/certdeploy -o mumble-server $RENEWED_LINEAGE /etc/certdeploy/mumble/voip.example.org'
 ~~~
 
-The first thing you notice here might be the use of the `$RENEWED_LINEAGE` variable. This is beside of `$RENEWED_DOMAINS` one of two variables you can use in conjunction with Certbot's `--deploy-hook` option (see [Certbot docs for more information](https://certbot.eff.org/docs/using.html?highlight=renewed_lineage)).
+The first thing you might notice here is the use of the `$RENEWED_LINEAGE` variable. This is beside of `$RENEWED_DOMAINS` one of two variables you can use in conjunction with Certbot's `--deploy-hook` option (see [Certbot docs for more information](https://certbot.eff.org/docs/using.html?highlight=renewed_lineage)).
 
-So instead of typing the absolute path to the source directory in `/etc/letsencrypt/live`, you can just use the `$RENEWED_LINEAGE` variable which is substituted **by Certbot** and points to the `live` directory of your new (or renewed) certificate files. After you issued the command above and got the certificate, you should see the stats printed by the `stat` command of CertDeploy inside the output of the Certbot command:
+So instead of typing the absolute path to the source directory in `/etc/letsencrypt/live`, you can just use the `$RENEWED_LINEAGE` variable which is substituted **by Certbot** and points to the `live` directory of your new (or renewed) certificate files. After you issued the command above and got the certificate, you should see some information printed by the `stat` command of CertDeploy inside the output of the Certbot command:
 
 ~~~
 Saving debug log to /var/log/letsencrypt/letsencrypt.log
@@ -103,7 +113,7 @@ IMPORTANT NOTES:
    "certbot renew"
 ~~~
 
-Since your new certificate has been successfully issued, you will find a new file called `mumble_voip.example.org.conf` residing in `/etc/letsencrypt/renewal`. If you `cat` this file, you will see your deploy hook command which will be executed again if Certbot automatically renews your expiring certificate(s) after (usually) 60 days:
+Since your new certificate has been successfully issued, you will find a new file called `mumble_voip.example.org.conf` residing in `/etc/letsencrypt/renewal`. This is Certbot's directory in which the information for the automated renewal process is kept. If you `cat` the file, you will see your deploy hook command which will be executed again if Certbot automatically renews your expiring certificate(s) after (usually) 60 days:
 
 ~~~
 # renew_before_expiry = 30 days
@@ -124,7 +134,9 @@ webroot_path = /var/www,
 [[webroot_map]]
 ~~~
 
-That's it! But there is one essential thing **we forgot to mention here:** *You may need to reload or restart your service/daemon so that he knows about the new certificate files!* No problem! You can combine multiple commands within Certbot's `--deploy-hook` option like in a shell. We check (for perfectionism) if the service is even running right now with `systemctl is-active mumble-server` and then restart the Mumble server daemon with `systemctl restart mumble-server`:
+That's it! But there is one essential thing **we forgot to mention here:** *You may need to reload or restart your service/daemon so that he knows about the new certificate files!*
+
+No problem! You can **combine multiple commands** with `&&` in Certbot's `--deploy-hook` option like in a shell. We check (for perfectionism) if the service is even running right now with `systemctl is-active mumble-server` and then restart the Mumble server daemon with `systemctl restart mumble-server`:
 
 ~~~bash
 certbot --staging certonly --cert-name mumble_voip.example.org -d voip.example.org --webroot --webroot-path /var/www --deploy-hook '/usr/local/sbin/certdeploy -o mumble-server $RENEWED_LINEAGE /etc/certdeploy/mumble/voip.example.org && systemctl is-active mumble-server && systemctl restart mumble-server'

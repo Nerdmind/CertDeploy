@@ -19,7 +19,7 @@
 #                                                                              #
 # [-K] Filename for private key in target directory                            #
 # [-I] Filename for intermediate in target directory                           #
-# [-C] Filename for certifcate in target directory                             #
+# [-C] Filename for certificate in target directory                            #
 # [-F] Filename for certificate chain in target directory                      #
 #                                                                              #
 # ========================== COMMAND-LINE ARGUMENTS ========================== #
