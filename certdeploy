@@ -131,7 +131,7 @@ for file in "$SOURCE_PATH_K" "$SOURCE_PATH_I" "$SOURCE_PATH_C" "$SOURCE_PATH_F"
 do
 	if [ ! -f "$file" ] || [ ! -r "$file" ]
 	then
-		echo "File »$file doesn't exists or isn't readable."
+		echo "File »$file« doesn't exists or isn't readable."
 		echo "Aborting ..." && exit 1
 	fi
 done
