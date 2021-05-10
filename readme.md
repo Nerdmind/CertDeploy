@@ -29,19 +29,19 @@ The following options let you change the UNIX file permission modes of the targe
 * `[-m mode]` **(default: `0600`)**:  
 Mode for target certificate files (octal notation, 3-4 digits)
 
-* `[-o owner]` **(default: `$(whoami)`)**:  
+* `[-o owner]` **(default: `$(id -u)`)**:  
 User ownership for certificate files in target directory
 
-* `[-g group]` **(default: `$(whoami)`)**:  
+* `[-g group]` **(default: `$(id -g)`)**:  
 Group ownership for certificate files in target directory
 
 * `[-M mode]` **(default: `0755`)**:  
 Mode for target directory (octal notation, 3-4 digits)
 
-* `[-O owner]` **(default: `$(whoami)`)**:  
+* `[-O owner]` **(default: `$(id -u)`)**:  
 User ownership for target directory
 
-* `[-G group]` **(default: `$(whoami)`)**:  
+* `[-G group]` **(default: `$(id -g)`)**:  
 Group ownership for target directory
 
 * `[-K filename]` **(default: `confidential.pem`)**:  
@@ -74,7 +74,7 @@ sslCert=/etc/certdeploy/mumble/voip.example.org/certificate_full.pem
 sslKey=/etc/certdeploy/mumble/voip.example.org/confidential.pem
 ~~~
 
-It is sufficient to use UNIX permissions `0600` (default) and user ownership `mumble-server` to achieve this. Since Certbot is running as `root` and because we omit the `-g` option of CertDeploy, the group ownership of the certificate files will become the default `$(whoami)` (which will be substituted to `root` in this case).
+It is sufficient to use UNIX permissions `0600` (default) and user ownership `mumble-server` to achieve this. Since Certbot is running as `root` and because we omit the `-g` option of CertDeploy, the group ownership of the certificate files will become the default `$(id -g)` (which will be substituted to the primary group of `root` in this case).
 
 OK, just request a new staging (test) certificate from Certbot with the `certonly` subcommand and provide the `--deploy-hook` option as follows. (You may need to adjust your `--webroot-path` in which the `.well-known/acme-challenge` directory for your domains is located. I have this directory globally located at `/var/www/.well-known/acme-challenge` for **all** my hostnames to make things easier.)
 

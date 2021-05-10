@@ -75,15 +75,21 @@ SOURCE_PATH="$1"
 TARGET_PATH="$2"
 
 #===============================================================================
+# Define default {owner|group} variable
+#===============================================================================
+DEFAULT_OWNER=$(id -u)
+DEFAULT_GROUP=$(id -g)
+
+#===============================================================================
 # Define {file|directory} mode, owner and group variables
 #===============================================================================
 FMODE="${OPTION_FMODE:-0600}"
-FOWNER="${OPTION_FOWNER:-$(whoami)}"
-FGROUP="${OPTION_FGROUP:-$(whoami)}"
+FOWNER="${OPTION_FOWNER:-$DEFAULT_OWNER}"
+FGROUP="${OPTION_FGROUP:-$DEFAULT_GROUP}"
 
 DMODE="${OPTION_DMODE:-0755}"
-DOWNER="${OPTION_DOWNER:-$(whoami)}"
-DGROUP="${OPTION_DGROUP:-$(whoami)}"
+DOWNER="${OPTION_DOWNER:-$DEFAULT_OWNER}"
+DGROUP="${OPTION_DGROUP:-$DEFAULT_GROUP}"
 
 # Allow only four digits (octal notation) for modes
 DMODE="$(echo "$DMODE" | tr -dc '0-7' | cut -c 1-4)"
