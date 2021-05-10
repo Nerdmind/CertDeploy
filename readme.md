@@ -113,7 +113,7 @@ IMPORTANT NOTES:
    "certbot renew"
 ~~~
 
-Since your new certificate has been successfully issued, you will find a new file called `mumble_voip.example.org.conf` residing in `/etc/letsencrypt/renewal`. This is Certbot's directory in which the information for the automated renewal process is kept. If you `cat` the file, you will see your deploy hook command which will be executed again if Certbot automatically renews your expiring certificate(s) after (usually) 60 days:
+Since your new certificate has been successfully issued, you will find a new file called `mumble_voip.example.org.conf` residing in `/etc/letsencrypt/renewal`. This is Certbot's directory in which the information for the automated renewal process is kept. If you `cat` this file, you will see your deploy hook command which will be re-executed when Certbot automatically renews your expiring certificate(s) after (usually) 60 days:
 
 ~~~
 # renew_before_expiry = 30 days
