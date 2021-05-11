@@ -66,7 +66,7 @@ fi
 #===============================================================================
 # Check if argument presence-validation errors occurred
 #===============================================================================
-[ ! -z "$argument_errors_occurred" ] && echo "Aborting ..." && exit 1
+[ ! -z "$argument_errors_occurred" ] && echo "Aborting ..." >&2 && exit 1
 
 #===============================================================================
 # Define {source|target} directory path variable
@@ -126,8 +126,8 @@ TARGET_PATH_F="${TARGET_PATH%/}/${TARGET_FILENAME_F}"
 #===============================================================================
 if [ ! -d "$SOURCE_PATH" ] || [ ! -r "$SOURCE_PATH" ]
 then
-	echo "Directory »$SOURCE_PATH« doesn't exists or isn't readable."
-	echo "Aborting ..." && exit 1
+	echo "Directory »$SOURCE_PATH« doesn't exists or isn't readable." >&2
+	echo "Aborting ..." >&2 && exit 1
 fi
 
 #===============================================================================
@@ -137,8 +137,8 @@ for file in "$SOURCE_PATH_K" "$SOURCE_PATH_I" "$SOURCE_PATH_C" "$SOURCE_PATH_F"
 do
 	if [ ! -f "$file" ] || [ ! -r "$file" ]
 	then
-		echo "File »$file« doesn't exists or isn't readable."
-		echo "Aborting ..." && exit 1
+		echo "File »$file« doesn't exists or isn't readable." >&2
+		echo "Aborting ..." >&2 && exit 1
 	fi
 done
 
