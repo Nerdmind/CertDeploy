@@ -1,0 +1,139 @@
+.TH CERTDEPLOY 8 "MAY 2021"
+.SH NAME
+certdeploy \- A deploy hook script for Certbot
+
+.SH SYNOPSIS
+certdeploy
+.B [OPTIONS...]
+.I SOURCE_DIRECTORY TARGET_DIRECTORY
+
+.SH DESCRIPTION
+.P
+CertDeploy is a "deploy hook" script for
+the Certbot ACME client written in Bash.
+
+.P
+CertDeploy can be used in conjunction with the
+.I --deploy-hook
+option of Certbot to easily deploy (or better: "install/move") your
+previously obtained X.509 certificate files and their corresponding
+private key to a desired directory structure with your custom UNIX
+file/directory permissions and user/group ownership applied.
+
+.SH OPTIONS
+The
+.I SOURCE_DIRECTORY
+is usually the path to the
+.I /etc/letsencrypt/live/foo.example.org
+directory provided by Certbot in which your newly issued (or renewed)
+certificate files reside. In conjunction with Certbot's
+.I --deploy-hook
+option, you can use the content of the
+.B $RENEWED_LINEAGE
+variable as
+.I SOURCE_DIRECTORY
+(see
+.B EXAMPLE
+below).
+
+The
+.I TARGET_DIRECTORY
+is the path to the custom directory in which the certificate files and
+their corresponding private key shall be copied into by CertDeploy. If
+.I TARGET_DIRECTORY
+does not exist, it will be created (including all parents).
+
+
+.SS Permissions for certificate files
+
+.IP "-m mode"
+Mode for target certificate files (octal notation, 3-4 digits).
+
+.B Default:
+"0600"
+
+.IP "-o owner"
+User ownership for certificate files in
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"$(id -u)"
+
+.IP "-g group"
+Group ownership for certificate files in
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"$(id -g)"
+
+.SS Permissions for target directory
+
+.IP "-M mode"
+Mode for
+.I TARGET_DIRECTORY
+(octal notation, 3-4 digits).
+
+.B Default:
+"0755"
+
+.IP "-O owner"
+User ownership for
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"$(id -u)"
+
+.IP "-G group"
+Group ownership for
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"$(id -g)"
+
+.SS Files in target directory
+
+.IP "-K filename"
+Filename for the RSA/ECDSA private key in
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"confidential.pem"
+
+.IP "-I filename"
+Filename for the X.509 intermediate certificate in
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"intermediate.pem"
+
+.IP "-C filename"
+Filename for the X.509 certificate in
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"certificate_only.pem"
+
+.IP "-F filename"
+Filename for the X.509 certificate+intermediate in
+.IR TARGET_DIRECTORY .
+
+.B Default:
+"certificate_full.pem"
+
+.SH EXAMPLE
+.SS From command-line
+$ sudo certdeploy -o daemon /etc/letsencrypt/live/foo.example.org/ /etc/certdeploy/example.org/foo/
+
+
+.SS With Certbot
+$ sudo certbot certonly -d voip.example.org --webroot --webroot-path /var/www --deploy-hook '/usr/local/sbin/certdeploy -o mumble-server
+.B $RENEWED_LINEAGE
+/etc/certdeploy/mumble/voip.example.org'
+
+.SS With Certbot (including restart of daemon)
+$ sudo certbot certonly -d voip.example.org --webroot --webroot-path /var/www --deploy-hook '/usr/local/sbin/certdeploy -o mumble-server
+.B $RENEWED_LINEAGE
+/etc/certdeploy/mumble/voip.example.org && systemctl is-active mumble-server && systemctl restart mumble-server'
+
+.SH SEE ALSO
+.BR certbot (1)
