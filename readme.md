@@ -7,12 +7,16 @@ CertDeploy has been developed for people like me who want their certificate file
 
 CertDeploy is a **different approach** than just changing the UNIX permission modes of the files residing in the directory provided by Certbot and gives you the opportunity to create your own directory structure for your X.509 certificates. If you don't like this approach, it's okay.
 
-## How to install CertDeploy?
-Since CertDeploy is just a Bash script, you don't really have to "install" something here. Just place the script in the `/usr/local/sbin` directory and it should by fine. If `/usr/local/sbin` is already in your `$PATH`, you can call it from the command-line by typing `certdeploy`, otherwise you need to use the full path (or you have to add `/usr/local/sbin` to your `$PATH`).
+## Installation
+Beside the possibility to manually place the script in some directory, you can use the more elegant way with [*GNU Stow*](https://www.gnu.org/software/stow/) to map the content from the `package` directory via symbolic links properly to `/usr/local`:
 
-Since you will be using an absolute path in Certbot's `--deploy-hook` option anyway, you can put CertDeploy to any location you want. I like it when it resides in `/usr/local/sbin`, because that's the place where I put all my custom scripts which are **intended** to get executed by `root` only (therefore `sbin`, not `bin`).
+~~~bash
+cd /usr/local/src
+git clone $REPO && cd $REPO
+stow -t /usr/local package
+~~~
 
-Make sure that no unprivileged user has write permissions on `/usr/local/sbin` or the `certdeploy` script, because CertDeploy is usually executed with `root` privileges by the Certbot ACME client!
+Make sure that no unprivileged user has write permissions on `/usr/local/sbin`, the symlink targets (in case you've choosen `stow`) and/or the `certdeploy` script, because CertDeploy is usually executed with `root` privileges.
 
 ## How to use CertDeploy from the command-line?
 The only two required command-line arguments are the source and the target directory path:
